@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Layout } from "@/components/layout";
 import { useEffect } from "react";
 
-// Pages
+// Pages — existing
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
@@ -22,6 +22,14 @@ import Progress from "@/pages/progress";
 import Achievements from "@/pages/achievements";
 import Profile from "@/pages/profile";
 import Settings from "@/pages/settings";
+
+// Pages — new AI tools
+import AiInputCenter from "@/pages/ai-input-center";
+import OcrStudio from "@/pages/ocr-studio";
+import DocumentCenter from "@/pages/document-center";
+import LanguageHub from "@/pages/language-hub";
+import EquationLab from "@/pages/equation-lab";
+import MindmapStudio from "@/pages/mindmap-studio";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,120 +53,82 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthGuard>
+      <Layout>{children}</Layout>
+    </AuthGuard>
+  );
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      
-      {/* Protected Routes wrapped in Layout */}
+
+      {/* ── Core pages ── */}
       <Route path="/">
-        <AuthGuard>
-          <Layout>
-            <Dashboard />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><Dashboard /></ProtectedRoute>
       </Route>
-      
       <Route path="/lectures">
-        <AuthGuard>
-          <Layout>
-            <Lectures />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><Lectures /></ProtectedRoute>
       </Route>
-      
       <Route path="/lectures/:id">
-        <AuthGuard>
-          <Layout>
-            <LectureDetail />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><LectureDetail /></ProtectedRoute>
       </Route>
-
       <Route path="/flashcards">
-        <AuthGuard>
-          <Layout>
-            <Flashcards />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><Flashcards /></ProtectedRoute>
       </Route>
-
       <Route path="/flashcards/:id">
-        <AuthGuard>
-          <Layout>
-            <FlashcardStudy />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><FlashcardStudy /></ProtectedRoute>
       </Route>
-
       <Route path="/quizzes">
-        <AuthGuard>
-          <Layout>
-            <Quizzes />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><Quizzes /></ProtectedRoute>
       </Route>
-
       <Route path="/quizzes/:id">
-        <AuthGuard>
-          <Layout>
-            <QuizTake />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><QuizTake /></ProtectedRoute>
       </Route>
-
       <Route path="/assistant">
-        <AuthGuard>
-          <Layout>
-            <Assistant />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><Assistant /></ProtectedRoute>
       </Route>
-
       <Route path="/search">
-        <AuthGuard>
-          <Layout>
-            <Search />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><Search /></ProtectedRoute>
       </Route>
-
       <Route path="/progress">
-        <AuthGuard>
-          <Layout>
-            <Progress />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><Progress /></ProtectedRoute>
       </Route>
-
       <Route path="/achievements">
-        <AuthGuard>
-          <Layout>
-            <Achievements />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><Achievements /></ProtectedRoute>
       </Route>
-
       <Route path="/profile">
-        <AuthGuard>
-          <Layout>
-            <Profile />
-          </Layout>
-        </AuthGuard>
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/settings">
+        <ProtectedRoute><Settings /></ProtectedRoute>
       </Route>
 
-      <Route path="/settings">
-        <AuthGuard>
-          <Layout>
-            <Settings />
-          </Layout>
-        </AuthGuard>
+      {/* ── AI Tools ── */}
+      <Route path="/input-center">
+        <ProtectedRoute><AiInputCenter /></ProtectedRoute>
+      </Route>
+      <Route path="/ocr-studio">
+        <ProtectedRoute><OcrStudio /></ProtectedRoute>
+      </Route>
+      <Route path="/documents">
+        <ProtectedRoute><DocumentCenter /></ProtectedRoute>
+      </Route>
+      <Route path="/language-hub">
+        <ProtectedRoute><LanguageHub /></ProtectedRoute>
+      </Route>
+      <Route path="/equation-lab">
+        <ProtectedRoute><EquationLab /></ProtectedRoute>
+      </Route>
+      <Route path="/mindmap-studio">
+        <ProtectedRoute><MindmapStudio /></ProtectedRoute>
       </Route>
 
       <Route>
-        <Layout>
-          <NotFound />
-        </Layout>
+        <Layout><NotFound /></Layout>
       </Route>
     </Switch>
   );

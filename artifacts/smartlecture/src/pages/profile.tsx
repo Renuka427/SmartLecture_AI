@@ -22,7 +22,7 @@ export default function Profile() {
       <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
         <div className="relative">
           <Avatar className="w-32 h-32 border-4 border-background shadow-xl">
-            <AvatarImage src={user.avatar} />
+            <AvatarImage src={user.avatar ?? undefined} />
             <AvatarFallback className="text-4xl bg-primary text-primary-foreground font-bold">
               {user.name.charAt(0)}
             </AvatarFallback>
@@ -48,7 +48,7 @@ export default function Profile() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="bio">Bio</Label>
-            <Textarea id="bio" defaultValue={user.bio} className="bg-background min-h-[100px]" />
+            <Textarea id="bio" defaultValue={user.bio ?? ""} className="bg-background min-h-[100px]" />
           </div>
           <Button type="button" size="lg" className="w-full md:w-auto">Save Changes</Button>
         </form>
