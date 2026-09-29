@@ -2,7 +2,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
-import runtimeErrorOverlay from "@Replit/vite-plugin-runtime-error-modal";
 
 // Replit uses PORT and BASE_PATH.
 // Vercel build environment may not provide them.
@@ -15,19 +14,20 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
 
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
-          await import("@Replit/vite-plugin-cartographer").then((m) =>
+          import("@Replit/vite-plugin-runtime-error-modal").then((m) =>
+            m.default()
+          ),
+          import("@Replit/vite-plugin-cartographer").then((m) =>
             m.cartographer({
               root: path.resolve(import.meta.dirname, ".."),
-            }),
+            })
           ),
-
-          await import("@Replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
+          import("@Replit/vite-plugin-dev-banner").then((m) =>
+            m.devBanner()
           ),
         ]
       : []),
