@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { BookOpen, Sparkles, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLogin, useRegister } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -13,14 +14,11 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const { toast } = useToast();
   
   const loginMutation = useLogin();
   const registerMutation = useRegister();
 
-  const handleDemoLogin = () => {
-    localStorage.setItem("sl_auth", "demo-token");
-    setLocation("/");
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,8 +31,11 @@ export default function Login() {
             setLocation("/");
           },
           onError: () => {
-            // fallback to demo on error for preview
-            handleDemoLogin();
+            toast({
+              title: "Sign in failed",
+              description: "Please check your email and password, then try again.",
+              variant: "destructive",
+            });
           }
         }
       );
@@ -47,8 +48,11 @@ export default function Login() {
             setLocation("/");
           },
           onError: () => {
-            // fallback to demo
-            handleDemoLogin();
+            toast({
+              title: "Sign up failed",
+              description: "Please try again. If you already have an account, sign in instead.",
+              variant: "destructive",
+            });
           }
         }
       );
@@ -191,24 +195,6 @@ export default function Login() {
               </Button>
             </div>
 
-            <div className="mt-8 relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-background text-muted-foreground">or</span>
-              </div>
-            </div>
-
-            <Button 
-              variant="outline" 
-              type="button" 
-              className="w-full mt-8" 
-              size="lg"
-              onClick={handleDemoLogin}
-            >
-              Enter Demo Mode
-            </Button>
           </motion.div>
         </div>
       </div>
