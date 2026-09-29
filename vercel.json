@@ -4,8 +4,17 @@
   "outputDirectory": "artifacts/smartlecture/dist/public",
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs24.x"
+    }
+  }
 }
