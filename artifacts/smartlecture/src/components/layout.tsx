@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useGetProfile } from "@workspace/api-client-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useState } from "react";\nimport { signOut } from "@/lib/supabase-auth";
 
 const CORE_LINKS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
