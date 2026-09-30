@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Layout } from "@/components/layout";
+import * as React from "react";
 import { useEffect, useState } from "react";
 import { getValidSession } from "@/lib/supabase-auth";
 
