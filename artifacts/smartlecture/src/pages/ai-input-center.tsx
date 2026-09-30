@@ -92,7 +92,8 @@ function ProcessingSteps({ onDone }: { onDone: () => void }) {
 }
 
 // ─── Transcript viewer ────────────────────────────────────────────────────────
-function TranscriptResult({ lines, duration, onReset }: { lines: TranscriptLine[]; duration: number; onReset: () => void }) {\n  const [summary, setSummary] = useState("");\n  const [summarizing, setSummarizing] = useState(false);\n  const [summaryError, setSummaryError] = useState("");
+function TranscriptResult({ lines, duration, onReset }: { lines: TranscriptLine[]; duration: number; onReset: () => void }) {
+  const [summary, setSummary] = useState("");\n  const [summarizing, setSummarizing] = useState(false);\n  const [summaryError, setSummaryError] = useState("");
   const [copied, setCopied] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -120,7 +121,7 @@ function TranscriptResult({ lines, duration, onReset }: { lines: TranscriptLine[
   const handleSummary = async () => {
     setSummarizing(true); setSummaryError("");
     try {
-      const response = await fetch("/api/study", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "summarize", text: lines.map((line) => line.text).join("\\n") }) });
+      const response = await fetch("/api/study", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "summarize", text: lines.map((line) => line.text).join("\n") }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not generate study notes.");
       setSummary(data.text || "No notes returned.");
@@ -336,7 +337,9 @@ function AudioUploadTab() {
   const [stage, setStage] = useState<"idle" | "recording" | "recorded" | "processing" | "done">("idle");
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
-  const [processingDone, setProcessingDone] = useState(false);\n  const [liveTranscript, setLiveTranscript] = useState("");\n  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const [processingDone, setProcessingDone] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState("");
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -410,7 +413,8 @@ function AudioUploadTab() {
                 <motion.div animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }} className="absolute inset-0 rounded-full bg-red-400/30" />
               </div>
               <p className="text-2xl font-mono font-bold text-red-600 mt-3">{fmt(recordingTime)}</p>
-              <p className="text-sm text-muted-foreground">Listening and transcribing live…</p>\n              <div className="max-h-40 overflow-auto rounded-lg bg-background/70 p-3 text-left text-sm whitespace-pre-wrap">{liveTranscript || "Your speech will appear here as you speak."}</div>
+              <p className="text-sm text-muted-foreground">Listening and transcribing live…</p>
+              <div className="max-h-40 overflow-auto rounded-lg bg-background/70 p-3 text-left text-sm whitespace-pre-wrap">{liveTranscript || "Your speech will appear here as you speak."}</div>
             </motion.div>
           ) : stage === "recorded" ? (
             <div>
