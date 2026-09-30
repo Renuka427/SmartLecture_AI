@@ -53,7 +53,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         if (!session && location !== "/login") setLocation("/login");
       })
       .catch(() => {
-        if (active) setLocation("/login");
+        if (active && location !== "/login") setLocation("/login");
       })
       .finally(() => {
         if (active) setChecking(false);
@@ -67,3 +67,100 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthGuard>
+      <Layout>{children}</Layout>
+    </AuthGuard>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/login" component={Login} />
+
+      {/* ── Core pages ── */}
+      <Route path="/">
+        <ProtectedRoute><Dashboard /></ProtectedRoute>
+      </Route>
+      <Route path="/lectures">
+        <ProtectedRoute><Lectures /></ProtectedRoute>
+      </Route>
+      <Route path="/lectures/:id">
+        <ProtectedRoute><LectureDetail /></ProtectedRoute>
+      </Route>
+      <Route path="/flashcards">
+        <ProtectedRoute><Flashcards /></ProtectedRoute>
+      </Route>
+      <Route path="/flashcards/:id">
+        <ProtectedRoute><FlashcardStudy /></ProtectedRoute>
+      </Route>
+      <Route path="/quizzes">
+        <ProtectedRoute><Quizzes /></ProtectedRoute>
+      </Route>
+      <Route path="/quizzes/:id">
+        <ProtectedRoute><QuizTake /></ProtectedRoute>
+      </Route>
+      <Route path="/assistant">
+        <ProtectedRoute><Assistant /></ProtectedRoute>
+      </Route>
+      <Route path="/search">
+        <ProtectedRoute><Search /></ProtectedRoute>
+      </Route>
+      <Route path="/progress">
+        <ProtectedRoute><Progress /></ProtectedRoute>
+      </Route>
+      <Route path="/achievements">
+        <ProtectedRoute><Achievements /></ProtectedRoute>
+      </Route>
+      <Route path="/profile">
+        <ProtectedRoute><Profile /></ProtectedRoute>
+      </Route>
+      <Route path="/settings">
+        <ProtectedRoute><Settings /></ProtectedRoute>
+      </Route>
+
+      {/* ── AI Tools ── */}
+      <Route path="/input-center">
+        <ProtectedRoute><AiInputCenter /></ProtectedRoute>
+      </Route>
+      <Route path="/ocr-studio">
+        <ProtectedRoute><OcrStudio /></ProtectedRoute>
+      </Route>
+      <Route path="/documents">
+        <ProtectedRoute><DocumentCenter /></ProtectedRoute>
+      </Route>
+      <Route path="/language-hub">
+        <ProtectedRoute><LanguageHub /></ProtectedRoute>
+      </Route>
+      <Route path="/equation-lab">
+        <ProtectedRoute><EquationLab /></ProtectedRoute>
+      </Route>
+      <Route path="/mindmap-studio">
+        <ProtectedRoute><MindmapStudio /></ProtectedRoute>
+      </Route>
+
+      <Route>
+        <Layout><NotFound /></Layout>
+      </Route>
+    </Switch>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="smartlecture-theme">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;
