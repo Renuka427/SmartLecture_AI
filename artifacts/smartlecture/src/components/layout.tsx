@@ -36,7 +36,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useGetProfile } from "@workspace/api-client-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";\nimport { signOut } from "@/lib/supabase-auth";
+import { useState } from "react";
+import { signOut } from "@/lib/supabase-auth";
 
 const CORE_LINKS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -215,8 +216,8 @@ function Header() {
     return "";
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("sl_auth");
+  const handleLogout = async () => {
+    await signOut();
     setLocation("/login");
   };
 
