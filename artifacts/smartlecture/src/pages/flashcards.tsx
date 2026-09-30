@@ -2,12 +2,11 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Layers, Plus, BookOpen, CheckCircle } from "lucide-react";
-import { useGetFlashcardDecks } from "@workspace/api-client-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 export default function Flashcards() {
-  const { data: decks, isLoading } = useGetFlashcardDecks();
+  const [, setLocation] = useLocation();
 
   const mockDecks = [
     { id: 1, title: "Cellular Biology Core Concepts", subject: "Biology", subjectColor: "hsl(152 68% 45%)", cardCount: 45, masteredCount: 12, dueCount: 15, lastStudied: "2023-10-15" },
@@ -16,7 +15,7 @@ export default function Flashcards() {
     { id: 4, title: "Organic Chem Structures", subject: "Chemistry", subjectColor: "hsl(356 100% 71%)", cardCount: 60, masteredCount: 10, dueCount: 25, lastStudied: "2023-10-16" },
   ];
 
-  const displayDecks = decks || mockDecks;
+  const displayDecks = mockDecks;
 
   const container = {
     hidden: { opacity: 0 },
@@ -38,19 +37,13 @@ export default function Flashcards() {
           <h1 className="text-3xl font-bold tracking-tight mb-2">Flashcard Decks</h1>
           <p className="text-muted-foreground">Master concepts with spaced repetition.</p>
         </div>
-        <Button className="shrink-0 gap-2 bg-chart-2 hover:bg-chart-2/90 text-white">
+        <Button onClick={() => setLocation("/input-center")} className="shrink-0 gap-2 bg-chart-2 hover:bg-chart-2/90 text-white">
           <Plus size={18} />
           Create Custom Deck
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array(8).fill(0).map((_, i) => (
-            <Skeleton key={i} className="h-64 rounded-2xl" />
-          ))}
-        </div>
-      ) : (
+      {(
         <motion.div 
           variants={container}
           initial="hidden"
