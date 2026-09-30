@@ -1,5 +1,3 @@
-export const config = { runtime: "nodejs" };
-
 type VercelRequest = { method?: string; body?: unknown };
 type VercelResponse = { status: (code: number) => VercelResponse; json: (body: unknown) => void };
 
