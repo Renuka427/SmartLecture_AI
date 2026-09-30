@@ -96,7 +96,8 @@ export default function OcrStudio() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files?.[0];\n    if (file) void processImage(file);
+    const file = e.dataTransfer.files?.[0];
+    if (file) void processImage(file);
   };
 
   const handleCopy = async () => {
@@ -211,7 +212,7 @@ export default function OcrStudio() {
 
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Detected text preview</p>
-                    {extractedText.split("\\n").filter(Boolean).slice(0, 6).map((line, i) => (
+                    {extractedText.split("\n").filter(Boolean).slice(0, 6).map((line, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs">
                         <span className="text-muted-foreground truncate flex-1">{line.substring(0, 60)}</span>
                         <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden shrink-0">
