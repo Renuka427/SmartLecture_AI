@@ -46,8 +46,24 @@ export default async function handler(req, res) {
     parts = [{
       text: "Create clear student study notes from the following lecture material. Include a short overview, key concepts, definitions/formulas, and 5 revision questions. Stay faithful to the provided material and flag unclear points rather than inventing facts.\n\n" + text
     }];
+  } else if (body.mode === "translate") {
+    const text = typeof body.text === "string" ? body.text.trim() : "";
+    const sourceLanguage = typeof body.sourceLanguage === "string" ? body.sourceLanguage.trim() : "the source language";
+    const targetLanguage = typeof body.targetLanguage === "string" ? body.targetLanguage.trim() : "";
+    if (!text) {
+      return res.status(400).json({ error: "Enter text to translate." });
+    }
+    if (!targetLanguage) {
+      return res.status(400).json({ error: "Choose a target language." });
+    }
+    if (text.length > 30000) {
+      return res.status(413).json({ error: "Text is too long. Please translate a shorter section." });
+    }
+    parts = [{
+      text: "Translate the following text from " + sourceLanguage + " into " + targetLanguage + ". Preserve the meaning, tone, names, formatting, and technical terms. Return only the translation, without commentary.\\n\\n" + text
+    }];
   } else {
-    return res.status(400).json({ error: "Unsupported mode. Use ocr or summarize." });
+    return res.status(400).json({ error: "Unsupported mode. Use ocr, summarize, or translate." });
   }
 
   try {
