@@ -51,39 +51,60 @@ export default async function handler(req, res) {
   }
 
   try {
-    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
-      {
-        method: "POST",
-        headers: {
-          "x-goog-api-key": key,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts }],
-          generationConfig: { temperature: 0.2 }
-        })
+    const preferredModel = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    const models = [...new Set([preferredModel, "gemini-3.7-flash", "gemini-3.5-flash"])];
+    let lastError = "Gemini is temporarily busy. Please try again shortly.";
+
+    for (const model of models) {
+      const response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
+        {
+          method: "POST",
+          headers: {
+            "x-goog-api-key": key,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts }],
+            generationConfig: { temperature: 0.2 }
+          })
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok) {
+        const message = data?.error?.message || "Gemini API request failed.";
+        const lowerMessage = message.toLowerCase();
+        const isOverload = response.status === 429 ||
+          response.status === 503 ||
+          lowerMessage.includes("high demand") ||
+          lowerMessage.includes("overloaded") ||
+          lowerMessage.includes("temporarily unavailable");
+
+        if (isOverload && model !== models[models.length - 1]) {
+          lastError = message;
+          continue;
+        }
+
+        return res.status(response.status >= 500 ? 502 : response.status).json({
+          error: message
+        });
       }
-    );
 
-    const data = await response.json();
-    if (!response.ok) {
-      return res.status(response.status >= 500 ? 502 : response.status).json({
-        error: data?.error?.message || "Gemini API request failed."
-      });
+      const output = (data.candidates?.[0]?.content?.parts || [])
+        .map(part => typeof part.text === "string" ? part.text : "")
+        .join("\n")
+        .trim();
+
+      if (!output) {
+        return res.status(502).json({ error: "Gemini returned an empty response. Please try again." });
+      }
+
+      return res.status(200).json({ text: output, model });
     }
 
-    const text = (data.candidates?.[0]?.content?.parts || [])
-      .map(part => typeof part.text === "string" ? part.text : "")
-      .join("\n")
-      .trim();
+    return res.status(503).json({ error: lastError });
 
-    if (!text) {
-      return res.status(502).json({ error: "Gemini returned an empty response. Please try again." });
-    }
-
-    return res.status(200).json({ text });
   } catch {
     return res.status(502).json({ error: "Could not connect to Gemini. Please try again." });
   }
