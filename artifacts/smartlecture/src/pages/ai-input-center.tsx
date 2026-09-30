@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
 type UploadState = "idle" | "uploading" | "processing" | "done";
+type SpeechRecognitionLike = { continuous: boolean; interimResults: boolean; lang: string; onresult: ((event: any) => void) | null; onerror: (() => void) | null; onend: (() => void) | null; start: () => void; stop: () => void };
+declare global { interface Window { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike } }
 
 // ─── Mock transcript generator ───────────────────────────────────────────────
 interface TranscriptLine {
@@ -90,7 +92,7 @@ function ProcessingSteps({ onDone }: { onDone: () => void }) {
 }
 
 // ─── Transcript viewer ────────────────────────────────────────────────────────
-function TranscriptResult({ lines, duration, onReset }: { lines: TranscriptLine[]; duration: number; onReset: () => void }) {
+function TranscriptResult({ lines, duration, onReset }: { lines: TranscriptLine[]; duration: number; onReset: () => void }) {\n  const [summary, setSummary] = useState("");\n  const [summarizing, setSummarizing] = useState(false);\n  const [summaryError, setSummaryError] = useState("");
   const [copied, setCopied] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -115,6 +117,18 @@ function TranscriptResult({ lines, duration, onReset }: { lines: TranscriptLine[
     toast({ title: "Downloaded transcript.txt" });
   };
 
+  const handleSummary = async () => {
+    setSummarizing(true); setSummaryError("");
+    try {
+      const response = await fetch("/api/study", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "summarize", text: lines.map((line) => line.text).join("\\n") }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not generate study notes.");
+      setSummary(data.text || "No notes returned.");
+    } catch (error) {
+      setSummaryError(error instanceof Error ? error.message : "Please try again.");
+    } finally { setSummarizing(false); }
+  };
+
   const handleMindMap = () => {
     setLocation("/mindmap-studio");
     toast({ title: "Opening Mind Map Studio", description: "Paste the transcript to auto-generate a mind map." });
@@ -122,6 +136,9 @@ function TranscriptResult({ lines, duration, onReset }: { lines: TranscriptLine[
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+      <div className="flex gap-3 flex-wrap"><Button onClick={handleSummary} disabled={summarizing} className="bg-violet-600 hover:bg-violet-700"><Zap size={14} className="mr-2" />{summarizing ? "Generating study notes..." : "Generate AI Study Notes"}</Button></div>
+      {summaryError && <p className="text-sm text-destructive">{summaryError}</p>}
+      {summary && <Card><CardHeader><CardTitle className="text-base">AI Study Notes</CardTitle></CardHeader><CardContent><div className="whitespace-pre-wrap text-sm leading-relaxed">{summary}</div></CardContent></Card>}
       {/* Stats bar */}
       <div className="flex flex-wrap gap-3 items-center">
         <Badge variant="secondary" className="gap-1.5 text-xs">
@@ -319,7 +336,7 @@ function AudioUploadTab() {
   const [stage, setStage] = useState<"idle" | "recording" | "recorded" | "processing" | "done">("idle");
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
-  const [processingDone, setProcessingDone] = useState(false);
+  const [processingDone, setProcessingDone] = useState(false);\n  const [liveTranscript, setLiveTranscript] = useState("");\n  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -327,16 +344,39 @@ function AudioUploadTab() {
   const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   const startRecording = () => {
-    setStage("recording");
-    setRecordingTime(0);
-    timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: "Live transcription is not supported", description: "Try the latest Chrome or Edge browser.", variant: "destructive" });
+      return;
+    }
+    setLiveTranscript("");
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-IN";
+    recognition.onresult = (event) => {
+      let text = "";
+      for (let i = 0; i < event.results.length; i++) text += event.results[i][0].transcript + (event.results[i].isFinal ? " " : "");
+      setLiveTranscript(text.trim());
+    };
+    recognition.onerror = () => toast({ title: "Microphone transcription issue", description: "Check microphone permission and try again.", variant: "destructive" });
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+      setStage("recording");
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+    } catch {
+      toast({ title: "Could not start microphone", description: "Please check microphone permission.", variant: "destructive" });
+    }
   };
 
   const stopRecording = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    recognitionRef.current?.stop();
     setAudioDuration(recordingTime);
     setStage("recorded");
-    toast({ title: "Recording saved", description: `${fmt(recordingTime)} captured — ready to transcribe.` });
+    toast({ title: "Live transcript captured", description: "Review the recognized words, then generate AI study notes." });
   };
 
   const startProcessing = () => {
@@ -355,7 +395,7 @@ function AudioUploadTab() {
   };
 
   if (stage === "done") {
-    return <TranscriptResult lines={TRANSCRIPT_LINES} duration={audioDuration || 120} onReset={() => { setStage("idle"); setRecordingTime(0); }} />;
+    return <TranscriptResult lines={liveTranscript ? [{ ts: "Live", speaker: "You", text: liveTranscript, confidence: 100 }] : []} duration={audioDuration} onReset={() => { setStage("idle"); setRecordingTime(0); setLiveTranscript(""); }} />;
   }
 
   return (
@@ -370,7 +410,7 @@ function AudioUploadTab() {
                 <motion.div animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }} className="absolute inset-0 rounded-full bg-red-400/30" />
               </div>
               <p className="text-2xl font-mono font-bold text-red-600 mt-3">{fmt(recordingTime)}</p>
-              <p className="text-sm text-muted-foreground">Recording in progress…</p>
+              <p className="text-sm text-muted-foreground">Listening and transcribing live…</p>\n              <div className="max-h-40 overflow-auto rounded-lg bg-background/70 p-3 text-left text-sm whitespace-pre-wrap">{liveTranscript || "Your speech will appear here as you speak."}</div>
             </motion.div>
           ) : stage === "recorded" ? (
             <div>
@@ -378,7 +418,7 @@ function AudioUploadTab() {
                 <CheckCircle2 className="text-emerald-600" size={32} />
               </div>
               <p className="font-semibold mt-3">Audio Ready — {fmt(audioDuration)}</p>
-              <p className="text-sm text-muted-foreground">Click Transcribe to process</p>
+              <p className="text-sm text-muted-foreground">Live transcript captured. Generate AI notes after reviewing.</p>
             </div>
           ) : stage === "processing" ? (
             <div className="text-left max-w-xs mx-auto">
