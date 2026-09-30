@@ -34,7 +34,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useGetProfile } from "@workspace/api-client-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { signOut } from "@/lib/supabase-auth";
@@ -194,7 +193,8 @@ function Sidebar() {
 
 function Header() {
   const [location, setLocation] = useLocation();
-  const { data: profile } = useGetProfile();
+  // Profile data is optional until the separate app data API is configured.
+  const profile = undefined;
   
   const getPageTitle = () => {
     if (location === "/") return "Dashboard";
