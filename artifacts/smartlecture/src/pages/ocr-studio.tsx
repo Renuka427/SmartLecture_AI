@@ -49,25 +49,54 @@ type ProcessState = "idle" | "processing" | "done";
 export default function OcrStudio() {
   const [state, setState] = useState<ProcessState>("idle");
   const [extractedText, setExtractedText] = useState("");
+  const [sourcePreview, setSourcePreview] = useState<string | null>(null);
+  const [summary, setSummary] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [zoom, setZoom] = useState(100);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const processImage = () => {
+  const processImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please upload an image file", description: "Choose a JPG, PNG, or WebP image.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      toast({ title: "Image is too large", description: "Please choose an image under 12 MB.", variant: "destructive" });
+      return;
+    }
     setState("processing");
-    setTimeout(() => {
+    setSourcePreview(URL.createObjectURL(file));
+    setSummary("");
+    try {
+      const image = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Could not read image."));
+        reader.onerror = () => reject(new Error("Could not read image."));
+        reader.readAsDataURL(file);
+      });
+      const response = await fetch("/api/study", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "ocr", image })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "OCR failed.");
+      setExtractedText(data.text || "");
       setState("done");
-      setExtractedText(MOCK_OCR_RESULT);
-      toast({ title: "OCR Complete", description: "Text extracted with 93% average confidence." });
-    }, 2500);
+      toast({ title: "OCR complete", description: "Text was extracted from your image. Please review it for accuracy." });
+    } catch (error) {
+      setState("idle");
+      toast({ title: "OCR failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    processImage();
+    const file = e.dataTransfer.files?.[0];\n    if (file) void processImage(file);
   };
 
   const handleCopy = async () => {
@@ -119,7 +148,7 @@ export default function OcrStudio() {
                     dragOver ? "border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/20 scale-[1.01]" : "border-border hover:border-cyan-400/60 hover:bg-muted/40"
                   }`}
                 >
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) processImage(); }} />
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void processImage(file); }} />
                   <div className="text-center space-y-3 p-6">
                     <div className="w-14 h-14 bg-cyan-500/10 rounded-2xl flex items-center justify-center mx-auto">
                       <ScanText className="text-cyan-600" size={28} />
@@ -166,34 +195,25 @@ export default function OcrStudio() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="aspect-[4/3] rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center border border-border/50 overflow-hidden" style={{ transform: `scale(${zoom / 100})`, transformOrigin: "top left", width: `${10000 / zoom}%` }}>
-                    <div className="p-6 w-full font-mono text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                      {MOCK_OCR_RESULT.substring(0, 300)}...
-                      <div className="mt-2 space-y-1">
-                        {CONFIDENCE_REGIONS.slice(0, 3).map((r, i) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <div className="h-3 rounded-sm flex-1 opacity-30" style={{ backgroundColor: r.color }}></div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="aspect-[4/3] rounded-xl bg-muted flex items-center justify-center border border-border/50 overflow-hidden">
+                    {sourcePreview ? <img src={sourcePreview} alt="Uploaded scan" className="max-w-full max-h-full object-contain" style={{ transform: `scale(${zoom / 100})` }} /> : <p className="text-sm text-muted-foreground">Image preview unavailable</p>}
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                      <span className="text-muted-foreground">Avg confidence: <strong className="text-foreground">{avgConfidence}%</strong></span>
+                      <span className="text-muted-foreground">AI text extraction — please review for accuracy</span>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setState("idle"); setExtractedText(""); }} data-testid="button-rescan">
+                    <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setState("idle"); setExtractedText(""); setSourcePreview(null); setSummary(""); }} data-testid="button-rescan">
                       <RefreshCcw size={12} className="mr-1" /> Rescan
                     </Button>
                   </div>
 
                   <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Confidence Map</p>
-                    {CONFIDENCE_REGIONS.map((r, i) => (
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Detected text preview</p>
+                    {extractedText.split("\\n").filter(Boolean).slice(0, 6).map((line, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs">
-                        <span className="text-muted-foreground truncate flex-1">{r.text.substring(0, 30)}...</span>
+                        <span className="text-muted-foreground truncate flex-1">{line.substring(0, 60)}</span>
                         <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden shrink-0">
                           <div className="h-full rounded-full" style={{ width: `${r.confidence}%`, backgroundColor: r.color }}></div>
                         </div>
