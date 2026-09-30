@@ -74,17 +74,33 @@ export default function LanguageHub() {
   const [targetLang, setTargetLang] = useState("ta");
   const [sourceText, setSourceText] = useState("Cell membrane transport refers to the movement of substances across the cell membrane. Active transport requires energy, while passive transport follows the concentration gradient.");
   const [translating, setTranslating] = useState(false);
-  const [translated, setTranslated] = useState(true);
+  const [translated, setTranslated] = useState(false);
+  const [translatedText, setTranslatedText] = useState("");
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const translatedText = MOCK_TRANSLATIONS[sourceLang]?.[targetLang] ?? MOCK_TRANSLATIONS["en"]?.[targetLang] ?? "Translation not available for this language pair in demo mode.";
-
-  const handleTranslate = () => {
+  const handleTranslate = async () => {
+    if (!sourceText.trim()) { toast({ title: "Enter text to translate", variant: "destructive" }); return; }
     if (sourceLang === targetLang) { toast({ title: "Same language selected", variant: "destructive" }); return; }
+    const sourceLanguage = LANGUAGES.find((l) => l.code === sourceLang)?.name || "the source language";
+    const targetLanguage = LANGUAGES.find((l) => l.code === targetLang)?.name || "the target language";
     setTranslating(true);
     setTranslated(false);
-    setTimeout(() => { setTranslating(false); setTranslated(true); }, 1400);
+    try {
+      const response = await fetch("/api/study", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "translate", text: sourceText, sourceLanguage, targetLanguage })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Translation failed.");
+      setTranslatedText(data.text || "");
+      setTranslated(true);
+    } catch (error) {
+      toast({ title: "Translation failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const handleSwap = () => {
