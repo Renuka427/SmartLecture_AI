@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Layout } from "@/components/layout";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";\nimport { getValidSession } from "@/lib/supabase-auth";
 
 // Pages — existing
 import NotFound from "@/pages/not-found";
@@ -42,111 +42,27 @@ const queryClient = new QueryClient({
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
-  
+  const [checking, setChecking] = useState(true);
+
   useEffect(() => {
-    const auth = localStorage.getItem("sl_auth");
-    if (!auth && location !== "/login") {
-      setLocation("/login");
-    }
+    let active = true;
+    getValidSession()
+      .then((session) => {
+        if (!active) return;
+        if (!session && location !== "/login") setLocation("/login");
+      })
+      .catch(() => {
+        if (active) setLocation("/login");
+      })
+      .finally(() => {
+        if (active) setChecking(false);
+      });
+    return () => { active = false; };
   }, [location, setLocation]);
 
+  if (checking) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Checking your session…</div>;
+  }
   return <>{children}</>;
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthGuard>
-      <Layout>{children}</Layout>
-    </AuthGuard>
-  );
-}
-
-function Router() {
-  return (
-    <Switch>
-      <Route path="/login" component={Login} />
-
-      {/* ── Core pages ── */}
-      <Route path="/">
-        <ProtectedRoute><Dashboard /></ProtectedRoute>
-      </Route>
-      <Route path="/lectures">
-        <ProtectedRoute><Lectures /></ProtectedRoute>
-      </Route>
-      <Route path="/lectures/:id">
-        <ProtectedRoute><LectureDetail /></ProtectedRoute>
-      </Route>
-      <Route path="/flashcards">
-        <ProtectedRoute><Flashcards /></ProtectedRoute>
-      </Route>
-      <Route path="/flashcards/:id">
-        <ProtectedRoute><FlashcardStudy /></ProtectedRoute>
-      </Route>
-      <Route path="/quizzes">
-        <ProtectedRoute><Quizzes /></ProtectedRoute>
-      </Route>
-      <Route path="/quizzes/:id">
-        <ProtectedRoute><QuizTake /></ProtectedRoute>
-      </Route>
-      <Route path="/assistant">
-        <ProtectedRoute><Assistant /></ProtectedRoute>
-      </Route>
-      <Route path="/search">
-        <ProtectedRoute><Search /></ProtectedRoute>
-      </Route>
-      <Route path="/progress">
-        <ProtectedRoute><Progress /></ProtectedRoute>
-      </Route>
-      <Route path="/achievements">
-        <ProtectedRoute><Achievements /></ProtectedRoute>
-      </Route>
-      <Route path="/profile">
-        <ProtectedRoute><Profile /></ProtectedRoute>
-      </Route>
-      <Route path="/settings">
-        <ProtectedRoute><Settings /></ProtectedRoute>
-      </Route>
-
-      {/* ── AI Tools ── */}
-      <Route path="/input-center">
-        <ProtectedRoute><AiInputCenter /></ProtectedRoute>
-      </Route>
-      <Route path="/ocr-studio">
-        <ProtectedRoute><OcrStudio /></ProtectedRoute>
-      </Route>
-      <Route path="/documents">
-        <ProtectedRoute><DocumentCenter /></ProtectedRoute>
-      </Route>
-      <Route path="/language-hub">
-        <ProtectedRoute><LanguageHub /></ProtectedRoute>
-      </Route>
-      <Route path="/equation-lab">
-        <ProtectedRoute><EquationLab /></ProtectedRoute>
-      </Route>
-      <Route path="/mindmap-studio">
-        <ProtectedRoute><MindmapStudio /></ProtectedRoute>
-      </Route>
-
-      <Route>
-        <Layout><NotFound /></Layout>
-      </Route>
-    </Switch>
-  );
-}
-
-function App() {
-  return (
-    <ThemeProvider defaultTheme="light" storageKey="smartlecture-theme">
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
-  );
-}
-
-export default App;

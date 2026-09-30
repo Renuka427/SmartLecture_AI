@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BookOpen, Sparkles, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { useLogin, useRegister } from "@workspace/api-client-react";
+import { signIn, signUp, sendPasswordReset } from "@/lib/supabase-auth";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -16,46 +16,55 @@ export default function Login() {
   const [name, setName] = useState("");
   const { toast } = useToast();
   
-  const loginMutation = useLogin();
-  const registerMutation = useRegister();
+  const [submitting, setSubmitting] = useState(false);
 
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLogin) {
-      loginMutation.mutate(
-        { data: { email, password } },
-        {
-          onSuccess: (data) => {
-            localStorage.setItem("sl_auth", data.token);
-            setLocation("/");
-          },
-          onError: () => {
-            toast({
-              title: "Sign in failed",
-              description: "Please check your email and password, then try again.",
-              variant: "destructive",
-            });
-          }
+    setSubmitting(true);
+    try {
+      if (isLogin) {
+        await signIn(email, password);
+        toast({ title: "Signed in", description: "Welcome back to SmartLecture." });
+        setLocation("/");
+      } else {
+        const result = await signUp(name, email, password);
+        if (result.session) {
+          toast({ title: "Account created", description: "Welcome to SmartLecture!" });
+          setLocation("/");
+        } else {
+          toast({
+            title: "Check your email",
+            description: "We sent you a confirmation link. Confirm your email, then sign in.",
+          });
+          setIsLogin(true);
         }
-      );
-    } else {
-      registerMutation.mutate(
-        { data: { name, email, password } },
-        {
-          onSuccess: (data) => {
-            localStorage.setItem("sl_auth", data.token);
-            setLocation("/");
-          },
-          onError: () => {
-            toast({
-              title: "Sign up failed",
-              description: "Please try again. If you already have an account, sign in instead.",
-              variant: "destructive",
-            });
-          }
-        }
-      );
+      }
+    } catch (error) {
+      toast({
+        title: isLogin ? "Sign in failed" : "Sign up failed",
+        description: error instanceof Error ? error.message : "Authentication failed. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast({ title: "Enter your email", description: "Type your email above, then select Forgot password." });
+      return;
+    }
+    try {
+      await sendPasswordReset(email);
+      toast({ title: "Check your email", description: "If an account exists for this email, a password reset link will arrive shortly." });
+    } catch (error) {
+      toast({
+        title: "Could not send reset link",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -176,8 +185,8 @@ export default function Login() {
                 />
               </div>
 
-              <Button type="submit" className="w-full mt-6" size="lg">
-                {isLogin ? "Sign In" : "Sign Up"}
+              <Button type="submit" disabled={submitting} className="w-full mt-6" size="lg">
+                {submitting ? "Please wait..." : isLogin ? "Sign In" : "Sign Up"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
