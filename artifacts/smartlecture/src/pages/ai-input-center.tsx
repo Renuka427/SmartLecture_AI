@@ -93,7 +93,9 @@ function ProcessingSteps({ onDone }: { onDone: () => void }) {
 
 // ─── Transcript viewer ────────────────────────────────────────────────────────
 function TranscriptResult({ lines, duration, onReset }: { lines: TranscriptLine[]; duration: number; onReset: () => void }) {
-  const [summary, setSummary] = useState("");\n  const [summarizing, setSummarizing] = useState(false);\n  const [summaryError, setSummaryError] = useState("");
+  const [summary, setSummary] = useState("");
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState("");
   const [copied, setCopied] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
