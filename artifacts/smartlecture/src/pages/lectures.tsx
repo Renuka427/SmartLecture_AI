@@ -1,18 +1,15 @@
 import { motion } from "framer-motion";
 import { BookOpen, Search, Filter, Clock, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
-import { useGetLectures, useGetSubjects } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 export default function Lectures() {
   const [search, setSearch] = useState("");
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
-
-  const { data: lectures, isLoading } = useGetLectures();
-  const { data: subjects, isLoading: subjectsLoading } = useGetSubjects();
+  const [, setLocation] = useLocation();
 
   // Mock data fallbacks
   const mockLectures = [
@@ -33,13 +30,13 @@ export default function Lectures() {
     { name: "CS", color: "hsl(200 80% 60%)", icon: "code", lectureCount: 10 },
   ];
 
-  const displayLectures = (lectures || mockLectures).filter(l => {
+  const displayLectures = mockLectures.filter(l => {
     const matchesSearch = l.title.toLowerCase().includes(search.toLowerCase());
     const matchesSubject = activeSubject ? l.subject === activeSubject : true;
     return matchesSearch && matchesSubject;
   });
 
-  const displaySubjects = subjects || mockSubjects;
+  const displaySubjects = mockSubjects;
 
   const container = {
     hidden: { opacity: 0 },
@@ -61,7 +58,7 @@ export default function Lectures() {
           <h1 className="text-3xl font-bold tracking-tight mb-2">My Lectures</h1>
           <p className="text-muted-foreground">Browse your processed lectures and study materials.</p>
         </div>
-        <Button className="shrink-0 gap-2">
+        <Button className="shrink-0 gap-2" onClick={() => setLocation("/input-center")}>
           <BookOpen size={18} />
           Upload New Lecture
         </Button>
@@ -99,10 +96,7 @@ export default function Lectures() {
             All Subjects
           </button>
           
-          {(subjectsLoading ? Array(6).fill(0) : displaySubjects).map((subject, i) => (
-            subject === 0 ? (
-              <Skeleton key={i} className="h-10 w-24 shrink-0 rounded-xl" />
-            ) : (
+          {displaySubjects.map((subject) => (
               <button 
                 key={subject.name}
                 onClick={() => setActiveSubject(activeSubject === subject.name ? null : subject.name)}
@@ -120,19 +114,12 @@ export default function Lectures() {
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: subject.color }}></div>
                 {subject.name}
               </button>
-            )
           ))}
         </div>
       </div>
 
       {/* Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array(6).fill(0).map((_, i) => (
-            <Skeleton key={i} className="h-48 rounded-2xl" />
-          ))}
-        </div>
-      ) : displayLectures.length === 0 ? (
+      {displayLectures.length === 0 ? (
         <div className="text-center py-20 bg-card rounded-2xl border border-dashed border-border">
           <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <BookOpen className="text-muted-foreground" size={24} />
