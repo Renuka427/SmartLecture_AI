@@ -41,6 +41,44 @@ const queryClient = new QueryClient({
   },
 });
 
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("SmartLecture page render failed:", error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6">
+          <div className="max-w-xl w-full rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <h1 className="text-xl font-bold mb-2">This page hit an error</h1>
+            <p className="text-sm text-muted-foreground mb-4">
+              SmartLecture could not render this module. Please share the error below so it can be fixed.
+            </p>
+            <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted p-3 text-xs">{this.state.error.message}</pre>
+            <button className="mt-4 rounded-lg bg-primary px-4 py-2 text-primary-foreground" onClick={() => window.location.reload()}>
+              Reload page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const [checking, setChecking] = useState(true);
