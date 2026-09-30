@@ -4,7 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Layout } from "@/components/layout";
-import { useEffect, useState } from "react";\nimport { getValidSession } from "@/lib/supabase-auth";
+import { useEffect, useState } from "react";
+import { getValidSession } from "@/lib/supabase-auth";
 
 // Pages — existing
 import NotFound from "@/pages/not-found";
