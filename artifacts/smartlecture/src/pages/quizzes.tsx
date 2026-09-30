@@ -1,11 +1,9 @@
 import { motion } from "framer-motion";
 import { HelpCircle, Play, CheckCircle2, Medal } from "lucide-react";
 import { Link } from "wouter";
-import { useGetQuizzes } from "@workspace/api-client-react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Quizzes() {
-  const { data: quizzes, isLoading } = useGetQuizzes();
+
 
   const mockQuizzes = [
     { id: 1, title: "Cellular Biology Mastery", subject: "Biology", subjectColor: "hsl(152 68% 45%)", questionCount: 15, bestScore: 85, attempts: 2 },
@@ -14,7 +12,7 @@ export default function Quizzes() {
     { id: 4, title: "Intro to Calculus", subject: "Math", subjectColor: "hsl(260 60% 65%)", questionCount: 12, bestScore: null, attempts: 0 },
   ];
 
-  const displayQuizzes = quizzes || mockQuizzes;
+  const displayQuizzes = mockQuizzes;
 
   const container = {
     hidden: { opacity: 0 },
@@ -36,13 +34,7 @@ export default function Quizzes() {
         <p className="text-muted-foreground">Test your knowledge and earn XP.</p>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Array(6).fill(0).map((_, i) => (
-            <Skeleton key={i} className="h-40 rounded-2xl" />
-          ))}
-        </div>
-      ) : (
+      {(
         <motion.div 
           variants={container}
           initial="hidden"
